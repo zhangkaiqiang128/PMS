@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <title>PMS位置监控系统</title>
+    <link rel="stylesheet" href="dist/css/semantic.min.css">
+    <link rel="stylesheet" href="dist/css/pms.css">
+    <script src="http://libs.baidu.com/jquery/1.11.3/jquery.min.js"></script>
+    <script src="dist/js/vue.min.js"></script>
+    <!--
+    <script src="dist/js/semantic.min.js"></script>
+    -->
+    <script src="http://api.map.baidu.com/api?v=2.0&ak=v6h8X6k5VpdFHrYsWDZiyWmlGBzyd8zn"></script>
+    <script>
+
+        var markers = [];
+
+        //移除标记点
+        var removeMarkers = function () {
+            for(var i=0; i<markers.length; i++){
+                map.removeOverlay(markers[i]);
+            }
+
+            markers = [];
+        };
+
+        //添加标记点
+        var addMarkers = function () {
+            for(var i=0; i<markers.length; i++) {
+                map.addOverlay(markers[i]);
+            }
+        };
+
+        //初始化地图
+        var initMap = function () {
+            var map = window.map = new BMap.Map("map-container");
+
+            //设置中心点为“陕西师范大学”
+            map.centerAndZoom("陕西师范大学", 16);
+            //允许使用滚轮缩放
+            map.enableScrollWheelZoom(true);
+            //添加比例尺，位置设置为右下角
+            map.addControl(new BMap.ScaleControl({anchor:BMAP_ANCHOR_BOTTOM_RIGHT}));
+        };
+
+        //更新系统数据
+        var updateData = function () {
+            var date = new Date();
+            var center = map.getCenter();
+            var geocoder = new BMap.Geocoder();
+
+            $("#date").html("日期："+date.getFullYear()+"-"+(date.getMonth()+1)+"-"+date.getDate());
+            $("#time").html("时间："+date.getHours()+":"+date.getMinutes()+":"+date.getSeconds());
+            $("#position").html("中心点经纬度："+center.lng+","+center.lat);
+
+            geocoder.getLocation(center,function (res) {
+                if(res){
+                    $("#address").html("中心点位置："+res.address);
+                }
+            });
+
+            setTimeout(updateData,800);
+        };
+
+        //更新地图
+        var updateMap = function () {
+            $.get("../api/position/query_last",null,function (data) {
+
+                removeMarkers();
+
+                var content = JSON.parse(data).content;
+
+                for(var i=0; i<content.length; i++){
+                    var point = new BMap.Point(content[i].lng, content[i].lat);
+                    var marker = new BMap.Marker(point);
+
+                    markers.push(marker);
+                }
+
+                addMarkers();
+                $("#number").html("终端数目："+content.length);
+            });
+
+            setTimeout(updateMap, 500);
+        };
+
+        $(function () {
+            initMap();
+            updateData();
+            updateMap();
+        });
+    </script>
+    <style>
+        *{
+            font-family: "Microsoft YaHei UI"!important;
+        }
+
+        #status div{
+            margin-bottom: 1rem;
+            letter-spacing: 0.1rem;
+        }
+    </style>
+</head>
+<body>
+<div class="ui container" style="height: 90%; padding-top: 5%;">
+    <div class="z-card ui grid" style="width: 100%; height: 100%;">
+        <div id="status" class="three wide column blue inverted" style="background: #03a9f4;">
+            <h2>PMS</h2>
+            <div id="date">日期：2017-07-05</div>
+            <div id="time">时间：16:32:22</div>
+            <div id="number">终端数目：0</div>
+            <div id="ok">系统状态：正常</div>
+            <div id="position">中心点经纬度：108.902887,34.159137</div>
+            <div id="address">中心点位置：陕西省西安市长安区陕西师范大学长安校区</div>
+        </div>
+        <div class="thirteen wide column" id="map-container"></div>
+    </div>
+</div>
+</body>
+</html>
