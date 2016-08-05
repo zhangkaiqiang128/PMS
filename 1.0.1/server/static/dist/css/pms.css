@@ -1,0 +1,7 @@
+body,html{
+    height: 100%;
+}
+
+.z-card{
+    box-shadow: #696969 0 0 10px;
+}
